@@ -12,10 +12,15 @@
 - Install path: `/mnt/SDCARD/Roms/PORTS/postal2`.
 - MainUI KMS screenshot confirms `Postal 2` appears in `PORTS` and is selectable.
 - Runtime and game payload hashes were checked after transfer.
-- Launch, visible game frame, audio, physical controls, save path and clean exit: pending physical menu launch.
+- The standard launcher reached the real Postal 2 process through the TSPS bridge/Weston X11 backend.
+- A real KMS capture showed the Postal 2 main menu. The user confirmed that picture and sound are present.
+- The exact Postal 2 process tree was stopped after testing. MainUI remained alive; the post-stop KMS frame was SpruceOS's lock screen and needs a physical button press to wake the menu.
+- Physical controls, save path, and a complete in-game session: pending the user's direct hardware test.
 
 ## Facts and hypotheses
 
 - Fact: the archive contains the Linux x86 Postal 2 binary and bundled SDL 1.2/OpenAL files.
 - Fact: the TSPS bridge presenter and guest GLES interposer have the expected aarch64 and ARMHF ELF types.
-- Hypothesis until the real launch: Postal 2's SDL 1.2/OpenGL path will render through the copied gl4es and TSPS bridge profile.
+- Fact: the working launcher uses an X11/GLX-capable GL4ES build; the earlier GLX stub no longer blocks startup.
+- Fact: the runtime log still contains `libopenal.so.1: wrong ELF class: ELFCLASS64`, while the user reports audible sound.
+- Pending: the remaining control, save, and full gameplay checks require direct physical interaction.
