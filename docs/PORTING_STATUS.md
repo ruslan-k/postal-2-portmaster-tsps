@@ -11,15 +11,17 @@
 
 - Target: TSPS Longan at `192.168.50.135`.
 - Device architecture: aarch64.
-- The standard PortMaster launcher reached the real Postal 2 process through `backend=tsps-bridge-weston-x11`.
-- A real KMS capture from the X11/GLX validation run showed the Postal 2 main menu: `POSTAL 2 Share The Pain`, `New Game`, `Load Game`, `Multiplayer`, `Options`, and `Exit`.
-- The user confirmed that picture and sound are present.
-- The tested process tree was stopped afterwards. No Postal 2 launcher, Box86 game, presenter, gptokeyb2, or Weston wrapper remained; MainUI stayed alive. The post-stop KMS capture showed SpruceOS's lock screen, so the physical button must wake/unlock the UI before the next menu launch.
+- The earlier menu-launch candidate selected `backend=tsps-bridge-weston-x11`, but Weston failed before game startup with `EGL does not support surfaceless platform` and `hybrid_game_exit=143`; this was the cause of the black screen.
+- An explicit X11/GLX validation run reached the real Postal 2 main menu: `POSTAL 2 Share The Pain`, `New Game`, `Load Game`, `Multiplayer`, `Options`, and `Exit`.
+- A symlink-free Xorg runtime from that working run is now packaged under `postal2/xvfb`; the launcher default is `POSTAL2_BACKEND=xorg`, while hybrid remains an explicit override.
+- The new launcher and all 104 Xorg runtime files were deployed with SHA-256 verification and a launcher backup. Physical menu re-test is pending.
+- The user previously confirmed that picture and sound are present on the working X11/GLX variant.
 
 ## Facts versus hypotheses
 
 - Fact: the archive has the expected Linux x86 game binary and bundled 32-bit libraries.
 - Fact: the generated bridge binaries have ARMHF and aarch64 ELF types respectively.
-- Fact: the working launcher uses the TSPS presenter and the X11/GLX-capable GL4ES path instead of the earlier GLX stub.
+- Fact: the X11/GLX-capable GL4ES path reaches the Postal 2 menu; the earlier GLX stub no longer blocks startup.
+- Fact: the previous menu black screen was caused by the default Weston headless EGL initialization failure, not by a proven black game framebuffer.
 - Fact: the runtime log still reports `libopenal.so.1: wrong ELF class: ELFCLASS64`; despite that warning, the user reports audible sound.
-- Pending: physical control mapping, save path, and a complete in-game session still need the user's direct hardware test.
+- Pending: physical menu relaunch, controls, save path, and a complete in-game session on the packaged-default Xorg path.

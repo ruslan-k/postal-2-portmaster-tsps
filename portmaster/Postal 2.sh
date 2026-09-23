@@ -86,6 +86,7 @@ esac
 PRES=0
 INPUT_PID=0
 XVFB_PID=0
+XORG_CONFIG_TMP=0
 XVFB_DISPLAY="${POSTAL2_XVFB_DISPLAY:-99}"
 cleanup() {
   if [ "$INPUT_PID" -ne 0 ]; then
@@ -102,6 +103,10 @@ cleanup() {
     kill "$PRES" 2>/dev/null || true
     wait "$PRES" 2>/dev/null || true
     PRES=0
+  fi
+  if [ "$XORG_CONFIG_TMP" -ne 0 ]; then
+    rm -f /tmp/postal2-xorg.conf
+    XORG_CONFIG_TMP=0
   fi
   rm -f /tmp/postal2.present.ready /tmp/tsp-glbridge.sock /tmp/tspgl-xport /tmp/postal2.frame "/tmp/.X${XVFB_DISPLAY}-lock" "/tmp/.X11-unix/X${XVFB_DISPLAY}"
 }
@@ -246,7 +251,18 @@ run_xvfb_backend() {
   XSERVER_KIND="${POSTAL2_XSERVER:-xvfb}"
   if [ "$XSERVER_KIND" = "xorg" ]; then
     XSERVER="$XVFB_ROOT/usr/lib/xorg/Xorg"
-    XSERVER_CONFIG="${POSTAL2_XORG_CONFIG:-$XVFB_ROOT/xorg-dummy.conf}"
+    if [ -n "${POSTAL2_XORG_CONFIG:-}" ]; then
+      XSERVER_CONFIG="$POSTAL2_XORG_CONFIG"
+    else
+      XSERVER_CONFIG=/tmp/postal2-xorg.conf
+      if [ ! -f "$XVFB_ROOT/xorg-dummy.conf" ]; then
+        echo "Xorg config template is unavailable: $XVFB_ROOT/xorg-dummy.conf"
+        return 3
+      fi
+      sed "s|/tmp/xvfb-postal2/usr/lib/xorg/modules|$XVFB_ROOT/usr/lib/xorg/modules|g" \
+        "$XVFB_ROOT/xorg-dummy.conf" >"$XSERVER_CONFIG"
+      XORG_CONFIG_TMP=1
+    fi
   else
     XSERVER="$XVFB_ROOT/usr/bin/Xvfb"
     XSERVER_CONFIG=
@@ -376,7 +392,7 @@ run_xvfb_backend() {
   return "$result"
 }
 
-BACKEND="${POSTAL2_BACKEND:-hybrid}"
+BACKEND="${POSTAL2_BACKEND:-xorg}"
 if [ "$BACKEND" = "xvfb" ]; then
   run_xvfb_backend
   result=$?

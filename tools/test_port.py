@@ -37,12 +37,16 @@ def main():
     egl = GAME / "glbridge" / "libEGL.so.1"
     box86 = GAME / "box86" / "box86"
     gl4es = GAME / "gl4es" / "libGL.so.1"
-    for path in (presenter, egl, box86, gl4es):
+    xorg = GAME / "xvfb" / "usr" / "lib" / "xorg" / "Xorg"
+    xorg_conf = GAME / "xvfb" / "xorg-dummy.conf"
+    for path in (presenter, egl, box86, gl4es, xorg, xorg_conf):
         assert path.is_file(), f"missing runtime artifact: {path}"
     assert "ARM aarch64" in run("file", str(presenter))
     assert "ARM" in run("file", str(egl))
     assert "ARM" in run("file", str(box86))
     assert "ARM" in run("file", str(gl4es))
+    assert "ARM aarch64" in run("file", str(xorg))
+    assert not any(path.is_symlink() for path in (GAME / "xvfb").rglob("*")), "xvfb runtime must be symlink-free"
     assert not (GAME / "box86" / "native" / "libSDL2-2.0.so.0").exists(), "core SDL2 must come from the CFW"
 
     dist = PORT / "dist" / "postal2.zip"
