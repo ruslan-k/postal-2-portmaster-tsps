@@ -1,0 +1,12 @@
+# Local game payload from the user's legally owned Postal 2 install
+Postal 2.zip
+postal2.zip
+portmaster/postal2/gamedata/*
+!portmaster/postal2/gamedata/README.txt
+portmaster/postal2/conf/
+portmaster/postal2/logs/
+portmaster/postal2/.postal2-stage/
+portmaster/postal2/*.log
+portmaster/postal2/*.ready
+portmaster/dist/
+build/

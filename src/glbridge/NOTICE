@@ -1,0 +1,4 @@
+The GLES proxy client/server sources in this directory are derived from
+star0081/D-TRIMUI_Galaxy_ON-_FIRE-_2, commit 7471aaed0f3798a6556e7d16512f9e79a536b635.
+They are used here under the MIT License. The bridge is game-neutral; Guacamelee
+specific behavior stays in the PortMaster launcher and the x86 game data.

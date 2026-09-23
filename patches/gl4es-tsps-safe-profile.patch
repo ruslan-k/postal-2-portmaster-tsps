@@ -1,0 +1,16 @@
+diff --git a/src/glx/hardext.c b/src/glx/hardext.c
+index 46e35bb8..5e2fe563 100644
+--- a/src/glx/hardext.c
++++ b/src/glx/hardext.c
+@@ -122,6 +122,11 @@ void GetHardwareExtensions(int notest)
+             hardext.pointsize = 1;
+             hardext.cubemap = 1;
+             hardext.maxdrawbuffers = 1;
++            if (hardext.fbo && hardext.maxcolorattach < 1)
++                hardext.maxcolorattach = 1;
++            hardext.maxcolorattach = 1;
++            hardext.depthstencil = 1;
++            hardext.depth24 = 1;
+ #ifdef AMIGAOS4
+             hardext.glsl300es = 1;
+ #endif

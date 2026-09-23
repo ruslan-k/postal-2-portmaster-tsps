@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<gameList>
+  <game>
+    <path>./Postal 2.sh</path>
+    <name>Postal 2</name>
+    <desc>Postal 2 is a first-person action game from Running With Scissors.</desc>
+    <releasedate>20030413T000000</releasedate>
+    <developer>Running With Scissors</developer>
+    <publisher>Running With Scissors</publisher>
+    <genre>Action / FPS</genre>
+    <image>./postal2/screenshot.png</image>
+  </game>
+</gameList>

@@ -1,0 +1,38 @@
+{
+  "version": 4,
+  "name": "postal2.zip",
+  "items": [
+    "Postal 2.sh",
+    "postal2"
+  ],
+  "attr": {
+    "title": "Postal 2",
+    "desc": "POSTAL 2 through Box86, gl4es and a TSPS 32-bit to 64-bit GLES bridge.",
+    "inst": "Copy a legally owned Linux Postal 2 1409 archive named Postal 2.zip into the postal2 folder before first launch.",
+    "genres": [
+      "action",
+      "fps"
+    ],
+    "porter": "Ruslan K.",
+    "desc_md": "POSTAL 2 is a first-person action game from Running With Scissors. This port targets TSPS through the Linux x86 build, Box86, gl4es and a native 32-bit to 64-bit GLES presenter.",
+    "availability": "paid",
+    "reqs": [
+      "power"
+    ],
+    "runtime": [],
+    "arch": [
+      "aarch64",
+      "armhf"
+    ],
+    "rtr": false,
+    "exp": false,
+    "image": {},
+    "store": [
+      {
+        "name": "Steam",
+        "gameurl": "https://store.steampowered.com/app/223470/POSTAL_2/",
+        "developerurl": "https://runningwithscissors.com/"
+      }
+    ]
+  }
+}

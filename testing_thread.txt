@@ -1,0 +1,21 @@
+# POSTAL 2 TSPS testing thread
+
+## Build checks
+
+- `tools/build_port.sh` completed with Zig 0.13.0.
+- `tools/test_port.py` passed metadata, shell syntax, ELF architecture and payload exclusion checks.
+- Commercial game files are excluded from the generated PortMaster archive.
+
+## Device checks
+
+- Device: TSPS Longan, aarch64, SpruceOS.
+- Install path: `/mnt/SDCARD/Roms/PORTS/postal2`.
+- MainUI KMS screenshot confirms `Postal 2` appears in `PORTS` and is selectable.
+- Runtime and game payload hashes were checked after transfer.
+- Launch, visible game frame, audio, physical controls, save path and clean exit: pending physical menu launch.
+
+## Facts and hypotheses
+
+- Fact: the archive contains the Linux x86 Postal 2 binary and bundled SDL 1.2/OpenAL files.
+- Fact: the TSPS bridge presenter and guest GLES interposer have the expected aarch64 and ARMHF ELF types.
+- Hypothesis until the real launch: Postal 2's SDL 1.2/OpenGL path will render through the copied gl4es and TSPS bridge profile.
