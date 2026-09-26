@@ -26,26 +26,18 @@ static void normalize(SDL_Event *event) {
     if (!event) return;
     int absolute = mode_is("absolute");
     int relative_mode = mode_is("relative");
-    if (!absolute && !relative_mode) return;
+    /* SDL 1.2 already defines x/y as absolute window coordinates and
+     * xrel/yrel as motion deltas. Keep both untouched in relative mode. */
+    if (relative_mode) return;
+    if (!absolute) return;
     unsigned type = (*event)[0];
     uint16_t *xy = (uint16_t *)(void *)(*event + 4);
     if (type == 4) {
         int16_t *rel = (int16_t *)(void *)(*event + 8);
-        /* The raw xrel/yrel track pointer position, not motion deltas.
-         * Compare one field family at a time: absolute leaves rel alone;
-         * relative replaces rel with consecutive-position differences. */
         uint16_t x = rel[0] < 0 ? 0 : rel[0] > 639 ? 639 : (uint16_t)rel[0];
         uint16_t y = rel[1] < 0 ? 0 : rel[1] > 479 ? 479 : (uint16_t)rel[1];
-        if (relative_mode) {
-            /* Seed the menu's logical cursor from the first real pointer
-             * position. Starting at zero loses the initial 256x192 offset,
-             * so the cursor can traverse only the upper-left subset. */
-            rel[0] = have_position ? (int16_t)(x - last_x) : (int16_t)x;
-            rel[1] = have_position ? (int16_t)(y - last_y) : (int16_t)y;
-        } else {
-            xy[0] = x;
-            xy[1] = y;
-        }
+        xy[0] = x;
+        xy[1] = y;
         last_x = x;
         last_y = y;
         have_position = 1;
