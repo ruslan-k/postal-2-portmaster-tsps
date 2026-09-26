@@ -15,6 +15,26 @@ static int publish_cursor_event(volatile uint32_t *hdr, SDL_Event *event, int *x
 
 static int cursor_event_position(const SDL_Event *event, int *x, int *y);
 static void publish_cursor(SDL_Event *event);
+static int sample_trace_record(unsigned *events, unsigned *logged,
+                               unsigned initial, unsigned interval, unsigned limit);
+
+static void test_trace_sampling_survives_early_events(void) {
+    unsigned events = 0, logged = 0;
+    for (unsigned i = 0; i < 128; ++i)
+        assert(sample_trace_record(&events, &logged, 128, 32, 512) == 1);
+    assert(events == 128 && logged == 128);
+    assert(sample_trace_record(&events, &logged, 128, 32, 512) == 1);
+    assert(events == 129 && logged == 129);
+    assert(sample_trace_record(&events, &logged, 128, 32, 512) == 0);
+    assert(events == 130 && logged == 129);
+    for (unsigned i = 130; i < 160; ++i)
+        (void)sample_trace_record(&events, &logged, 128, 32, 512);
+    assert(events == 160 && logged == 129);
+    assert(sample_trace_record(&events, &logged, 128, 32, 512) == 1);
+    assert(events == 161 && logged == 130);
+    logged = 512;
+    assert(sample_trace_record(&events, &logged, 128, 32, 512) == 0);
+}
 
 static void test_cursor_frame_header_mapping(void) {
     char path[] = "/tmp/postal2-frame-test-XXXXXX";
@@ -110,6 +130,7 @@ static void test_cursor_frame_header_mapping(void) {
 }
 
 int main(void) {
+    test_trace_sampling_survives_early_events();
     test_cursor_frame_header_mapping();
     SDL_Event event = {0};
     uint16_t *xy = (uint16_t *)(void *)(event + 4);

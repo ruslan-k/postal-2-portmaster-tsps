@@ -34,13 +34,13 @@ extern int munmap(void *, unsigned long);
 #endif
 
 typedef unsigned char SDL_Event[24];
-static unsigned records;
+static unsigned records, record_logs;
 static uint16_t last_x, last_y;
 static int have_position;
 static unsigned peep_gets;
 static unsigned cursor_records;
 static unsigned mouse_state_records;
-static unsigned diag_cursor_records;
+static unsigned diag_cursor_records, diag_cursor_logs;
 static unsigned diag_cursor_map_attempts;
 static int diag_cursor_x, diag_cursor_y, diag_cursor_have_position;
 static volatile uint32_t *diag_cursor_header;
@@ -53,6 +53,17 @@ static int mode_is(const char *wanted) {
 static int env_is_one(const char *name) {
     const char *value = getenv(name);
     return value && value[0] == '1' && value[1] == '\0';
+}
+static int sample_trace_record(unsigned *events, unsigned *logged,
+                               unsigned initial, unsigned interval, unsigned limit) {
+    if (!events || !logged) return 0;
+    unsigned index = (*events)++;
+    if (*logged >= limit) return 0;
+    if (index < initial || interval == 0 || index % interval == 0) {
+        ++*logged;
+        return 1;
+    }
+    return 0;
 }
 static int cursor_event_position(const SDL_Event *event, int *x, int *y) {
     if (!event || !x || !y) return 0;
@@ -150,19 +161,19 @@ static void publish_cursor(SDL_Event *event) {
         fprintf(stderr, "P2-MAP frame_header=ready path=%s\n", POSTAL2_FRAME_PATH);
     }
     if (!publish_cursor_event(diag_cursor_header, event, &x, &y)) return;
-    if (diag_cursor_records < 512) {
+    if (sample_trace_record(&diag_cursor_records, &diag_cursor_logs, 128, 32, 512)) {
+        unsigned sequence = diag_cursor_records - 1;
         if (type == 4) {
             const uint16_t *raw = (const uint16_t *)(const void *)(*event + 4);
             const int16_t *rel = (const int16_t *)(const void *)(*event + 8);
-            fprintf(stderr, "P2-MAP source=relative-accum event=%u raw=%u,%u rel=%d,%d marker=%d,%d\n",
-                    type, raw[0], raw[1], rel[0], rel[1], x, y);
+            fprintf(stderr, "P2-MAP source=relative-accum event=%u seq=%u raw=%u,%u rel=%d,%d marker=%d,%d\n",
+                    type, sequence, raw[0], raw[1], rel[0], rel[1], x, y);
         } else {
             const uint16_t *raw = (const uint16_t *)(const void *)(*event + 4);
-            fprintf(stderr, "P2-MAP source=relative-accum event=%u raw=%u,%u marker=%d,%d\n",
-                    type, raw[0], raw[1], x, y);
+            fprintf(stderr, "P2-MAP source=relative-accum event=%u seq=%u raw=%u,%u marker=%d,%d\n",
+                    type, sequence, raw[0], raw[1], x, y);
         }
     }
-    ++diag_cursor_records;
 }
 
 static int force_cursor_toggle(int requested) {
@@ -206,18 +217,21 @@ static void normalize(SDL_Event *event) {
                 type == 4 ? ((int16_t *)(void *)(*event + 8))[1] : 0);
 }
 static void record(const char *api, const SDL_Event *event) {
-    if (!event || records >= 160) return;
+    if (!event) return;
     unsigned t = (*event)[0];
     if (t < 2 || t > 6) return;
-    ++records;
+    if (!sample_trace_record(&records, &record_logs, 128, 32, 512)) return;
     if (t == 4) {
         const int16_t *v = (const int16_t *)(const void *)(*event + 4);
-        fprintf(stderr, "P2-SDL %s type=%u xy=%d,%d rel=%d,%d\n", api, t, v[0], v[1], v[2], v[3]);
+        fprintf(stderr, "P2-SDL %s type=%u seq=%u xy=%d,%d rel=%d,%d\n", api, t,
+                records - 1, v[0], v[1], v[2], v[3]);
     } else if (t == 5 || t == 6) {
         const uint16_t *xy = (const uint16_t *)(const void *)(*event + 4);
-        fprintf(stderr, "P2-SDL %s type=%u button=%u xy=%u,%u\n", api, t, (*event)[2], xy[0], xy[1]);
+        fprintf(stderr, "P2-SDL %s type=%u seq=%u button=%u xy=%u,%u\n", api, t,
+                records - 1, (*event)[2], xy[0], xy[1]);
     } else {
-        fprintf(stderr, "P2-SDL %s type=%u state=%u key=%u\n", api, t, (*event)[2], (*event)[4]);
+        fprintf(stderr, "P2-SDL %s type=%u seq=%u state=%u key=%u\n", api, t,
+                records - 1, (*event)[2], (*event)[4]);
     }
 }
 

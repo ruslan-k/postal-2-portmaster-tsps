@@ -66,7 +66,8 @@ def main():
     assert 'dlopen("libEGL.so.1", RTLD_LAZY | RTLD_NOLOAD)' not in trace_source
     assert "P2-MAP source=relative-accum" in trace_source
     assert "raw=%u,%u rel=%d,%d marker=%d,%d" in trace_source
-    assert "diag_cursor_records < 512" in trace_source
+    assert "sample_trace_record(&records, &record_logs, 128, 32, 512)" in trace_source
+    assert "sample_trace_record(&diag_cursor_records, &diag_cursor_logs, 128, 32, 512)" in trace_source
     assert "update_cursor_marker" in trace_source
     assert "cursor_event_position" in trace_source
     presenter_source = (ROOT / "src" / "glbridge" / "server.c").read_text()
