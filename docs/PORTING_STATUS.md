@@ -34,6 +34,8 @@
 
 - Latest stopped-run observation: motion events reached `(639,479)`; `SDL_GetMouseState` calls=0 and `SDL_GetRelativeMouseState(NULL,NULL)` calls=2. The old API lookup left `P2-CURSOR` absent. The game process is now gone and MainUI PID is alive, but a fresh KMS capture still shows the last Postal 2 tutorial frame; visual MainUI restoration is therefore unconfirmed. The run log contains XIO failure/SIGILL; cause is undetermined and is not attributed to the probe.
 
+- Deployment of the shared-header probe: commit `fd4827f739b7251191c8a25f2eca0687c52ee4b7` is installed on Longan at both the `Roms/PORTS` and `Roms/ports` views (same inode). Read-back: 10,336 bytes, i386, SHA-256 `820357f6c09df3053973a6c50d5d8335384eb3a9b30ed7109b899490cf98c8b9`; previous probe preserved at `/mnt/SDCARD/Roms/PORTS/.postal2-sharedmap-backup-fd4827f` with SHA-256 `a243f21eca0cd9f3e61b70777f2ea6275efacb29afd928a4b883fe40ff4e2183`. MainUI PID was present and no game-related process was active. Fresh KMS capture is the SpruceOS lock screen; new marker has not yet been physically tested.
+
 ## Facts versus hypotheses
 
 - Fact: the archive has the expected Linux x86 game binary and bundled 32-bit libraries.
