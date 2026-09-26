@@ -74,8 +74,30 @@ def main():
     assert "P2-CURSOR guest=" in presenter_source
     launcher = (PORT / "Postal 2.sh").read_text()
     assert "BOX86_LD_PRELOAD" in launcher
-    assert 'POSTAL2_DIAG_UWINDOW_CURSOR="${POSTAL2_DIAG_UWINDOW_CURSOR:-1}"' in launcher
-    assert 'POSTAL2_FORCE_CURSOR="${POSTAL2_FORCE_CURSOR:-0}"' in launcher
+    viewport_rules = (
+        r's/^([[:space:]]*[[:alnum:]_]*ViewportX[[:space:]]*=[[:space:]]*)[^[:space:]]*/\1640/',
+        r's/^([[:space:]]*[[:alnum:]_]*ViewportY[[:space:]]*=[[:space:]]*)[^[:space:]]*/\1480/',
+    )
+    assert all(rule in launcher for rule in viewport_rules)
+    with tempfile.TemporaryDirectory(prefix="postal2-resolution-test-") as tmp:
+        ini = pathlib.Path(tmp) / "Postal2.ini"
+        ini.write_text("WindowedViewportX=1280\nWindowedViewportY=720\nFullscreenViewportX=1920\nFullscreenViewportY=1080\nMenuViewportX=1280\nMenuViewportY=720\n")
+        for rule in viewport_rules:
+            subprocess.run(["sed", "-i", "-E", rule, str(ini)], check=True)
+        configured = ini.read_text().splitlines()
+        assert configured == [
+            "WindowedViewportX=640", "WindowedViewportY=480",
+            "FullscreenViewportX=640", "FullscreenViewportY=480",
+            "MenuViewportX=640", "MenuViewportY=480",
+        ]
+    assert launcher.count("export POSTAL2_WIDTH=640") == 3
+    assert launcher.count("export POSTAL2_HEIGHT=480") == 3
+    assert 'export SDL_OFFSCREEN_WIDTH="$POSTAL2_WIDTH"' in launcher
+    assert 'export SDL_OFFSCREEN_HEIGHT="$POSTAL2_HEIGHT"' in launcher
+    assert 'POSTAL2_DIAG_UWINDOW_CURSOR="${POSTAL2_DIAG_UWINDOW_CURSOR:-0}"' in launcher
+    assert 'POSTAL2_FORCE_CURSOR="${POSTAL2_FORCE_CURSOR:-1}"' in launcher
+    assert "POSTAL2_XVFB_WIDTH:-1280" in launcher
+    assert "POSTAL2_XVFB_HEIGHT:-720" in launcher
     assert "uwindow_cursor_diag=$POSTAL2_DIAG_UWINDOW_CURSOR" in launcher
     assert 'POSTAL2_FORCE_UNGRAB="${POSTAL2_FORCE_UNGRAB:-0}"' in launcher
     assert "force_ungrab=$POSTAL2_FORCE_UNGRAB" in launcher

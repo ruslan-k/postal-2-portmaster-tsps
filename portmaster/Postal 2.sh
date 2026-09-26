@@ -66,8 +66,10 @@ for ini in "$GAMEDIR/gamedata/System/Postal2.ini" \
            "$GAMEDIR/conf/.lgp/postal2/System/Postal2MP.ini"; do
   if [ -f "$ini" ]; then
     sed -i 's/master.gamespy.com/master.333networks.com/g' "$ini"
-    sed -i 's/ViewportX=800/ViewportX=640/g' "$ini"
-    sed -i 's/ViewportY=600/ViewportY=480/g' "$ini"
+    sed -i -E \
+      -e 's/^([[:space:]]*[[:alnum:]_]*ViewportX[[:space:]]*=[[:space:]]*)[^[:space:]]*/\1640/' \
+      -e 's/^([[:space:]]*[[:alnum:]_]*ViewportY[[:space:]]*=[[:space:]]*)[^[:space:]]*/\1480/' \
+      "$ini"
   fi
 done
 
@@ -161,8 +163,8 @@ run_hybrid_backend() {
     return 2
   fi
 
-  export POSTAL2_WIDTH="${POSTAL2_WIDTH:-640}"
-  export POSTAL2_HEIGHT="${POSTAL2_HEIGHT:-480}"
+  export POSTAL2_WIDTH=640
+  export POSTAL2_HEIGHT=480
   export TSPGL_WIDTH="$POSTAL2_WIDTH"
   export TSPGL_HEIGHT="$POSTAL2_HEIGHT"
   export TSPGL_PRESENT="${POSTAL2_PRESENT:-letterbox}"
@@ -312,8 +314,8 @@ run_xvfb_backend() {
     return 3
   fi
 
-  export POSTAL2_WIDTH="${POSTAL2_WIDTH:-640}"
-  export POSTAL2_HEIGHT="${POSTAL2_HEIGHT:-480}"
+  export POSTAL2_WIDTH=640
+  export POSTAL2_HEIGHT=480
   export TSPGL_WIDTH="$POSTAL2_WIDTH"
   export TSPGL_HEIGHT="$POSTAL2_HEIGHT"
   export TSPGL_PRESENT="${POSTAL2_PRESENT:-letterbox}"
@@ -440,9 +442,9 @@ run_xvfb_backend() {
   if [ "${POSTAL2_INPUT_TRACE:-1}" = 1 ] && [ -f "$GAMEDIR/postal2_sdl_input_trace.so" ]; then
     export BOX86_LD_PRELOAD="$GAMEDIR/postal2_sdl_input_trace.so"
     export POSTAL2_MOUSE_COORD_MODE="${POSTAL2_MOUSE_COORD_MODE:-relative}"
-    export POSTAL2_FORCE_CURSOR="${POSTAL2_FORCE_CURSOR:-0}"
+    export POSTAL2_FORCE_CURSOR="${POSTAL2_FORCE_CURSOR:-1}"
     export POSTAL2_FORCE_UNGRAB="${POSTAL2_FORCE_UNGRAB:-0}"
-    export POSTAL2_DIAG_UWINDOW_CURSOR="${POSTAL2_DIAG_UWINDOW_CURSOR:-1}"
+    export POSTAL2_DIAG_UWINDOW_CURSOR="${POSTAL2_DIAG_UWINDOW_CURSOR:-0}"
     echo "input_trace=$BOX86_LD_PRELOAD coord_mode=$POSTAL2_MOUSE_COORD_MODE force_cursor=$POSTAL2_FORCE_CURSOR force_ungrab=$POSTAL2_FORCE_UNGRAB uwindow_cursor_diag=$POSTAL2_DIAG_UWINDOW_CURSOR"
   else
     unset BOX86_LD_PRELOAD POSTAL2_DIAG_UWINDOW_CURSOR
@@ -533,10 +535,10 @@ else
     echo "TSPS bridge files are incomplete"
     result=2
   else
-    export POSTAL2_WIDTH="${POSTAL2_WIDTH:-640}"
-    export POSTAL2_HEIGHT="${POSTAL2_HEIGHT:-480}"
-    export SDL_OFFSCREEN_WIDTH="${POSTAL2_SDL_OFFSCREEN_WIDTH:-$POSTAL2_WIDTH}"
-    export SDL_OFFSCREEN_HEIGHT="${POSTAL2_SDL_OFFSCREEN_HEIGHT:-$POSTAL2_HEIGHT}"
+    export POSTAL2_WIDTH=640
+    export POSTAL2_HEIGHT=480
+    export SDL_OFFSCREEN_WIDTH="$POSTAL2_WIDTH"
+    export SDL_OFFSCREEN_HEIGHT="$POSTAL2_HEIGHT"
     export TSPGL_WIDTH="$POSTAL2_WIDTH"
     export TSPGL_HEIGHT="$POSTAL2_HEIGHT"
     export TSPGL_PRESENT="${POSTAL2_PRESENT:-letterbox}"
