@@ -14,7 +14,10 @@
 - The earlier menu-launch candidate selected `backend=tsps-bridge-weston-x11`, but Weston failed before game startup with `EGL does not support surfaceless platform` and `hybrid_game_exit=143`; this was the cause of the black screen.
 - An explicit X11/GLX validation run reached the real Postal 2 main menu: `POSTAL 2 Share The Pain`, `New Game`, `Load Game`, `Multiplayer`, `Options`, and `Exit`.
 - A symlink-free Xorg runtime from that working run is now packaged under `postal2/xvfb`; the launcher default is `POSTAL2_BACKEND=xorg`, while hybrid remains an explicit override.
-- The new launcher and all 104 Xorg runtime files were deployed with SHA-256 verification and a launcher backup. Physical menu re-test is pending.
+- The launcher and all 104 Xorg runtime files were deployed with SHA-256 verification and a launcher backup. Physical menu re-test is pending.
+- 2026-09-26: the installed launcher had uncommitted Xorg evdev integration: start gptokeyb2 first, attach its `Fake Keyboard Mouse` event node, and use a mouse-driven root map (D-pad motion, A left-click). These exact installed files are now the repository starting point; the former tracked map's `[controls:menu]` was never selected by the launcher.
+- Latest two device launches (Sep 24 and Sep 26) both terminated with Box86 `Unimplemented Opcode (EA) F0 40 2D E9 02 40 A0 E1`, `SIGILL`, `xvfb_game_exit=1`. Xorg attached event5 as a keyboard/mouse; that does not prove guest input or UI action. The Sept 26 Unreal log reached `Startup` and initialized an SDL viewport, then stopped. Cause of SIGILL remains unknown.
+- Next candidate is a passive i386 `SDL_PollEvent`/`SDL_PeepEvents` probe preloaded only in the canonical Xorg guest (`POSTAL2_INPUT_TRACE=1` default, `=0` disables); it records up to 160 mouse/key events with no event mutation. Request a physical menu launch; check preload in guest `/proc/<pid>/maps`, correlate `P2-SDL` lines and observed UI, and capture the crash if it recurs. No input or graphics fix is claimed yet.
 - The user previously confirmed that picture and sound are present on the working X11/GLX variant.
 
 ## Facts versus hypotheses

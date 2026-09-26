@@ -112,6 +112,43 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+find_input_event_by_name() {
+  wanted="$1"
+  for namefile in /sys/class/input/event*/device/name; do
+    [ -f "$namefile" ] || continue
+    name=$(cat "$namefile" 2>/dev/null || true)
+    if [ "$name" = "$wanted" ]; then
+      event=${namefile#/sys/class/input/}
+      event=${event%%/*}
+      printf '/dev/input/%s' "$event"
+      return 0
+    fi
+  done
+  return 1
+}
+
+start_input_helper() {
+  cd "$GAMEDIR/gamedata/System" || return 1
+  $GPTOKEYB2 "postal2-bin" -c "$GAMEDIR/postal2.ini" >>"$LOG" 2>&1 &
+  INPUT_PID=$!
+  n=0
+  while [ "$n" -lt 10 ]; do
+    POSTAL2_INPUT_EVENT=$(find_input_event_by_name "Fake Keyboard Mouse" || true)
+    if [ -n "$POSTAL2_INPUT_EVENT" ]; then
+      export POSTAL2_INPUT_EVENT
+      echo "input_helper_pid=$INPUT_PID input_event=$POSTAL2_INPUT_EVENT input_wait=$n"
+      return 0
+    fi
+    if ! kill -0 "$INPUT_PID" 2>/dev/null; then
+      break
+    fi
+    n=$((n + 1))
+    sleep 1
+  done
+  echo "input_helper_failed pid=$INPUT_PID input_wait=$n"
+  return 1
+}
+
 run_hybrid_backend() {
   echo "backend=tsps-bridge-weston-x11"
   SYS="$GAMEDIR/armhf"
@@ -255,12 +292,6 @@ run_xvfb_backend() {
       XSERVER_CONFIG="$POSTAL2_XORG_CONFIG"
     else
       XSERVER_CONFIG=/tmp/postal2-xorg.conf
-      if [ ! -f "$XVFB_ROOT/xorg-dummy.conf" ]; then
-        echo "Xorg config template is unavailable: $XVFB_ROOT/xorg-dummy.conf"
-        return 3
-      fi
-      sed "s|/tmp/xvfb-postal2/usr/lib/xorg/modules|$XVFB_ROOT/usr/lib/xorg/modules|g" \
-        "$XVFB_ROOT/xorg-dummy.conf" >"$XSERVER_CONFIG"
       XORG_CONFIG_TMP=1
     fi
   else
@@ -276,7 +307,7 @@ run_xvfb_backend() {
     echo "X server runtime is unavailable: $XSERVER"
     return 3
   fi
-  if [ "$XSERVER_KIND" = "xorg" ] && [ ! -f "$XSERVER_CONFIG" ]; then
+  if [ "$XSERVER_KIND" = "xorg" ] && [ "$XORG_CONFIG_TMP" -eq 0 ] && [ ! -f "$XSERVER_CONFIG" ]; then
     echo "Xorg config is unavailable: $XSERVER_CONFIG"
     return 3
   fi
@@ -312,6 +343,23 @@ run_xvfb_backend() {
   if [ ! -f /tmp/postal2.present.ready ]; then
     echo "Xvfb backend presenter failed to become ready"
     return 4
+  fi
+
+  if [ "$XSERVER_KIND" = "xorg" ]; then
+    if ! start_input_helper; then
+      echo "gptokeyb2 failed to create a virtual input device"
+      return 5
+    fi
+    if [ "$XORG_CONFIG_TMP" -ne 0 ]; then
+      if [ ! -f "$XVFB_ROOT/xorg-dummy.conf" ]; then
+        echo "Xorg config template is unavailable: $XVFB_ROOT/xorg-dummy.conf"
+        return 5
+      fi
+      sed \
+        -e "s|/tmp/xvfb-postal2/usr/lib/xorg/modules|$XVFB_ROOT/usr/lib/xorg/modules|g" \
+        -e "s|__POSTAL2_INPUT_EVENT__|$POSTAL2_INPUT_EVENT|g" \
+        "$XVFB_ROOT/xorg-dummy.conf" >"$XSERVER_CONFIG"
+    fi
   fi
 
   XVFB_LD="$XVFB_ROOT/usr/lib/aarch64-linux-gnu:$XVFB_ROOT/lib/aarch64-linux-gnu:/usr/lib:/lib:/mnt/SDCARD/spruce/flip/lib"
@@ -383,9 +431,19 @@ run_xvfb_backend() {
   export LD_LIBRARY_PATH="$GAME_LD"
 
   cd "$GAMEDIR/gamedata/System" || return 6
-  $GPTOKEYB2 "postal2-bin" -c "$GAMEDIR/postal2.ini" >>"$LOG" 2>&1 &
-  INPUT_PID=$!
+  if [ "$INPUT_PID" -eq 0 ]; then
+    start_input_helper || return 6
+  fi
   pm_platform_helper "$GAMEDIR/box86/box86" >/dev/null &
+  # Diagnostic only: guest i386 SDL events, not an input mapping or renderer change.
+  # Keep this candidate active for the next physical menu launch; disable with 0.
+  if [ "${POSTAL2_INPUT_TRACE:-1}" = 1 ] && [ -f "$GAMEDIR/postal2_sdl_input_trace.so" ]; then
+    export BOX86_LD_PRELOAD="$GAMEDIR/postal2_sdl_input_trace.so"
+    echo "input_trace=$BOX86_LD_PRELOAD"
+  else
+    unset BOX86_LD_PRELOAD
+    echo "input_trace=off"
+  fi
   env -u LD_PRELOAD -u EGL_PLATFORM "$LD" --library-path "$GAME_LD" "$GAMEDIR/box86/box86" ./postal2-bin -windowed
   result=$?
   echo "xvfb_game_exit=$result"
