@@ -2157,6 +2157,8 @@ static void splash_present(void)
 
 static void present_draw_cursor(int dx, int dy, int dw, int dh)
 {
+    static int last_log_x = -1, last_log_y = -1;
+    static unsigned cursor_log_records;
     uint32_t *hdr;
     int gx, gy, sx, sy, gl_y;
     int arm;
@@ -2177,6 +2179,17 @@ static void present_draw_cursor(int dx, int dy, int dw, int dh)
         dh = win_h;
     sx = dx + gx * dw / (game_w > 0 ? game_w : 1);
     sy = dy + gy * dh / (game_h > 0 ? game_h : 1);
+    if (gx != last_log_x || gy != last_log_y) {
+        ++cursor_log_records;
+        if (cursor_log_records <= 8 || cursor_log_records % 30 == 0 ||
+            ((gx == 0 || gx == game_w - 1) &&
+             (gy == 0 || gy == game_h - 1)))
+            fprintf(stderr, "P2-CURSOR guest=%d,%d rect=%d,%d %dx%d game=%dx%d output=%dx%d screen=%d,%d\n",
+                    gx, gy, dx, dy, dw, dh, game_w, game_h,
+                    win_w, win_h, sx, sy);
+        last_log_x = gx;
+        last_log_y = gy;
+    }
     gl_y = win_h - 1 - sy;
     arm = 16;
     if (real_get_integerv) {

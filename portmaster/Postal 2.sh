@@ -435,8 +435,8 @@ run_xvfb_backend() {
     start_input_helper || return 6
   fi
   pm_platform_helper "$GAMEDIR/box86/box86" >/dev/null &
-  # Diagnostic overlay projects accumulated SDL relative deltas into the guest framebuffer.
-  # POSTAL2_DIAG_UWINDOW_CURSOR=0 disables the yellow reference crosshair.
+  # Diagnostic overlay publishes raw SDL x/y to a presenter-scaled reference cursor.
+  # SDL event coordinates and relative deltas remain unchanged in the default mode.
   if [ "${POSTAL2_INPUT_TRACE:-1}" = 1 ] && [ -f "$GAMEDIR/postal2_sdl_input_trace.so" ]; then
     export BOX86_LD_PRELOAD="$GAMEDIR/postal2_sdl_input_trace.so"
     export POSTAL2_MOUSE_COORD_MODE="${POSTAL2_MOUSE_COORD_MODE:-relative}"

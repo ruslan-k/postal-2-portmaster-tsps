@@ -57,8 +57,11 @@ def main():
     assert "Intel 80386" in run("readelf", "-h", str(trace))
     trace_source = (ROOT / "src" / "postal2_sdl_input_trace.c").read_text()
     assert 'dlsym(RTLD_DEFAULT, "postal2_fb_set_cursor")' in trace_source
-    assert "P2-MAP axis_projection=" in trace_source
-    assert "static void accumulate_mouse_delta" in trace_source
+    assert 'dlopen("libEGL.so.1", RTLD_LAZY | RTLD_NOLOAD)' in trace_source
+    assert "P2-MAP source=raw-sdl-xy" in trace_source
+    assert "cursor_event_position" in trace_source
+    presenter_source = (ROOT / "src" / "glbridge" / "server.c").read_text()
+    assert "P2-CURSOR guest=" in presenter_source
     launcher = (PORT / "Postal 2.sh").read_text()
     assert "BOX86_LD_PRELOAD" in launcher
     assert 'POSTAL2_DIAG_UWINDOW_CURSOR="${POSTAL2_DIAG_UWINDOW_CURSOR:-1}"' in launcher
