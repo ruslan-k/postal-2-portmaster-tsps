@@ -435,13 +435,14 @@ run_xvfb_backend() {
     start_input_helper || return 6
   fi
   pm_platform_helper "$GAMEDIR/box86/box86" >/dev/null &
-  # Guest i386 SDL classifier: next physical A/B changes only relative deltas.
-  # POSTAL2_MOUSE_COORD_MODE=passive is the no-op comparator.
+  # Guest i386 SDL classifier: isolate whether SDL's pointer grab confines the menu cursor.
+  # POSTAL2_FORCE_UNGRAB=0 is the unchanged SDL_GRAB_ON comparator.
   if [ "${POSTAL2_INPUT_TRACE:-1}" = 1 ] && [ -f "$GAMEDIR/postal2_sdl_input_trace.so" ]; then
     export BOX86_LD_PRELOAD="$GAMEDIR/postal2_sdl_input_trace.so"
     export POSTAL2_MOUSE_COORD_MODE="${POSTAL2_MOUSE_COORD_MODE:-relative}"
     export POSTAL2_FORCE_CURSOR="${POSTAL2_FORCE_CURSOR:-1}"
-    echo "input_trace=$BOX86_LD_PRELOAD coord_mode=$POSTAL2_MOUSE_COORD_MODE force_cursor=$POSTAL2_FORCE_CURSOR"
+    export POSTAL2_FORCE_UNGRAB="${POSTAL2_FORCE_UNGRAB:-1}"
+    echo "input_trace=$BOX86_LD_PRELOAD coord_mode=$POSTAL2_MOUSE_COORD_MODE force_cursor=$POSTAL2_FORCE_CURSOR force_ungrab=$POSTAL2_FORCE_UNGRAB"
   else
     unset BOX86_LD_PRELOAD
     echo "input_trace=off"

@@ -29,6 +29,12 @@ static int force_cursor_toggle(int requested) {
         return 1;
     return requested;
 }
+static int force_grab_mode(int requested) {
+    const char *force = getenv("POSTAL2_FORCE_UNGRAB");
+    if (requested == 1 && force && force[0] == '1' && force[1] == '\0')
+        return 0;
+    return requested;
+}
 static void normalize(SDL_Event *event) {
     if (!event) return;
     int absolute = mode_is("absolute");
@@ -117,10 +123,12 @@ int SDL_WM_GrabInput(int mode) {
     static int (*real)(int);
     if (!real) real = dlsym(RTLD_NEXT, "SDL_WM_GrabInput");
     if (!real) return -1;
-    int result = real(mode);
+    int effective = force_grab_mode(mode);
+    int result = real(effective);
     if (cursor_records < 80) {
         ++cursor_records;
-        fprintf(stderr, "P2-SDL WM_GrabInput mode=%d result=%d\n", mode, result);
+        fprintf(stderr, "P2-SDL WM_GrabInput requested=%d effective=%d result=%d\n",
+                mode, effective, result);
     }
     return result;
 }

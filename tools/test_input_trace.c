@@ -63,6 +63,14 @@ int main(void) {
     assert(force_cursor_toggle(0) == 1);
     assert(force_cursor_toggle(1) == 1);
     assert(force_cursor_toggle(-1) == -1);
-    puts("PASS: force-cursor override changes only SDL_DISABLE requests");
+    assert(setenv("POSTAL2_FORCE_UNGRAB", "0", 1) == 0);
+    assert(force_grab_mode(-1) == -1);
+    assert(force_grab_mode(0) == 0);
+    assert(force_grab_mode(1) == 1);
+    assert(setenv("POSTAL2_FORCE_UNGRAB", "1", 1) == 0);
+    assert(force_grab_mode(-1) == -1);
+    assert(force_grab_mode(0) == 0);
+    assert(force_grab_mode(1) == 0);
+    puts("PASS: SDL grab override changes only SDL_GRAB_ON requests");
     return 0;
 }
