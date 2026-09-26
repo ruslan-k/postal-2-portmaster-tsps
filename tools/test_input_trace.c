@@ -55,6 +55,14 @@ int main(void) {
     xy[0] = 639; xy[1] = 479;
     normalize(&event);
     assert(xy[0] == 639 && xy[1] == 479);
-    puts("PASS: SDL relative events preserved byte-for-byte; full-range native delta sequence preserved");
+    assert(setenv("POSTAL2_FORCE_CURSOR", "0", 1) == 0);
+    assert(force_cursor_toggle(0) == 0);
+    assert(force_cursor_toggle(1) == 1);
+    assert(force_cursor_toggle(-1) == -1);
+    assert(setenv("POSTAL2_FORCE_CURSOR", "1", 1) == 0);
+    assert(force_cursor_toggle(0) == 1);
+    assert(force_cursor_toggle(1) == 1);
+    assert(force_cursor_toggle(-1) == -1);
+    puts("PASS: force-cursor override changes only SDL_DISABLE requests");
     return 0;
 }

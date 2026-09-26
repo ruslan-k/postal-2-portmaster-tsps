@@ -23,6 +23,12 @@ static int mode_is(const char *wanted) {
     while (*wanted && *mode && *wanted == *mode) { ++wanted; ++mode; }
     return !*wanted && !*mode;
 }
+static int force_cursor_toggle(int requested) {
+    const char *force = getenv("POSTAL2_FORCE_CURSOR");
+    if (requested == 0 && force && force[0] == '1' && force[1] == '\0')
+        return 1;
+    return requested;
+}
 static void normalize(SDL_Event *event) {
     if (!event) return;
     int absolute = mode_is("absolute");
@@ -97,10 +103,12 @@ int SDL_ShowCursor(int toggle) {
     static int (*real)(int);
     if (!real) real = dlsym(RTLD_NEXT, "SDL_ShowCursor");
     if (!real) return -1;
-    int result = real(toggle);
+    int effective = force_cursor_toggle(toggle);
+    int result = real(effective);
     if (cursor_records < 80) {
         ++cursor_records;
-        fprintf(stderr, "P2-SDL ShowCursor toggle=%d result=%d\n", toggle, result);
+        fprintf(stderr, "P2-SDL ShowCursor requested=%d effective=%d result=%d\n",
+                toggle, effective, result);
     }
     return result;
 }
