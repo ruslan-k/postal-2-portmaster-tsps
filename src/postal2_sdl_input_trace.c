@@ -15,6 +15,7 @@ static unsigned records;
 static uint16_t last_x, last_y;
 static int have_position;
 static unsigned peep_gets;
+static unsigned mouse_state_records;
 static int mode_is(const char *wanted) {
     const char *mode = getenv("POSTAL2_MOUSE_COORD_MODE");
     if (!mode) return 0;
@@ -71,6 +72,32 @@ static void record(const char *api, const SDL_Event *event) {
     } else {
         fprintf(stderr, "P2-SDL %s type=%u state=%u key=%u\n", api, t, (*event)[2], (*event)[4]);
     }
+}
+
+int SDL_GetMouseState(int *x, int *y) {
+    static int (*real)(int *, int *);
+    if (!real) real = dlsym(RTLD_NEXT, "SDL_GetMouseState");
+    if (!real) return 0;
+    int result = real(x, y);
+    if (mouse_state_records < 80) {
+        ++mouse_state_records;
+        fprintf(stderr, "P2-SDL GetMouseState x=%d y=%d buttons=%d\n",
+                x ? *x : -1, y ? *y : -1, result);
+    }
+    return result;
+}
+
+int SDL_GetRelativeMouseState(int *x, int *y) {
+    static int (*real)(int *, int *);
+    if (!real) real = dlsym(RTLD_NEXT, "SDL_GetRelativeMouseState");
+    if (!real) return 0;
+    int result = real(x, y);
+    if (mouse_state_records < 80) {
+        ++mouse_state_records;
+        fprintf(stderr, "P2-SDL GetRelativeMouseState x=%d y=%d buttons=%d\n",
+                x ? *x : -1, y ? *y : -1, result);
+    }
+    return result;
 }
 
 int SDL_PollEvent(SDL_Event *event) {
