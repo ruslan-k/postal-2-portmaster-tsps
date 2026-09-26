@@ -39,6 +39,10 @@ def main():
     gl4es = GAME / "gl4es" / "libGL.so.1"
     xorg = GAME / "xvfb" / "usr" / "lib" / "xorg" / "Xorg"
     xorg_conf = GAME / "xvfb" / "xorg-dummy.conf"
+    xorg_config = xorg_conf.read_text()
+    assert 'Modes "640x480"' in xorg_config
+    assert 'InputDevice "Postal2KeyboardMouse"' in xorg_config
+    assert '"__POSTAL2_INPUT_EVENT__"' in xorg_config
     trace = GAME / "postal2_sdl_input_trace.so"
     assert "ELF 32-bit" in run("file", str(trace))
     assert "Intel 80386" in run("readelf", "-h", str(trace))
