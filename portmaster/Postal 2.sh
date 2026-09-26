@@ -435,11 +435,12 @@ run_xvfb_backend() {
     start_input_helper || return 6
   fi
   pm_platform_helper "$GAMEDIR/box86/box86" >/dev/null &
-  # Diagnostic only: guest i386 SDL events, not an input mapping or renderer change.
-  # Keep this candidate active for the next physical menu launch; disable with 0.
+  # Guest i386 SDL classifier: default absolute-coordinate A/B for the next
+  # physical launch. Set POSTAL2_MOUSE_COORD_MODE=passive for raw-only logging.
   if [ "${POSTAL2_INPUT_TRACE:-1}" = 1 ] && [ -f "$GAMEDIR/postal2_sdl_input_trace.so" ]; then
     export BOX86_LD_PRELOAD="$GAMEDIR/postal2_sdl_input_trace.so"
-    echo "input_trace=$BOX86_LD_PRELOAD"
+    export POSTAL2_MOUSE_COORD_MODE="${POSTAL2_MOUSE_COORD_MODE:-absolute}"
+    echo "input_trace=$BOX86_LD_PRELOAD coord_mode=$POSTAL2_MOUSE_COORD_MODE"
   else
     unset BOX86_LD_PRELOAD
     echo "input_trace=off"
