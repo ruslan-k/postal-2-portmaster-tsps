@@ -16,6 +16,7 @@ static uint16_t last_x, last_y;
 static int have_position;
 static unsigned peep_gets;
 static unsigned mouse_state_records;
+static unsigned cursor_records;
 static int mode_is(const char *wanted) {
     const char *mode = getenv("POSTAL2_MOUSE_COORD_MODE");
     if (!mode) return 0;
@@ -88,6 +89,30 @@ int SDL_GetRelativeMouseState(int *x, int *y) {
         ++mouse_state_records;
         fprintf(stderr, "P2-SDL GetRelativeMouseState x=%d y=%d buttons=%d\n",
                 x ? *x : -1, y ? *y : -1, result);
+    }
+    return result;
+}
+
+int SDL_ShowCursor(int toggle) {
+    static int (*real)(int);
+    if (!real) real = dlsym(RTLD_NEXT, "SDL_ShowCursor");
+    if (!real) return -1;
+    int result = real(toggle);
+    if (cursor_records < 80) {
+        ++cursor_records;
+        fprintf(stderr, "P2-SDL ShowCursor toggle=%d result=%d\n", toggle, result);
+    }
+    return result;
+}
+
+int SDL_WM_GrabInput(int mode) {
+    static int (*real)(int);
+    if (!real) real = dlsym(RTLD_NEXT, "SDL_WM_GrabInput");
+    if (!real) return -1;
+    int result = real(mode);
+    if (cursor_records < 80) {
+        ++cursor_records;
+        fprintf(stderr, "P2-SDL WM_GrabInput mode=%d result=%d\n", mode, result);
     }
     return result;
 }
