@@ -48,7 +48,7 @@ def main():
     assert "Intel 80386" in run("readelf", "-h", str(trace))
     launcher = (PORT / "Postal 2.sh").read_text()
     assert "BOX86_LD_PRELOAD" in launcher
-    assert 'POSTAL2_FORCE_UNGRAB="${POSTAL2_FORCE_UNGRAB:-1}"' in launcher
+    assert 'POSTAL2_FORCE_UNGRAB="${POSTAL2_FORCE_UNGRAB:-0}"' in launcher
     assert "force_ungrab=$POSTAL2_FORCE_UNGRAB" in launcher
     for path in (presenter, egl, box86, gl4es, xorg, xorg_conf):
         assert path.is_file(), f"missing runtime artifact: {path}"
