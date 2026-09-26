@@ -1,5 +1,6 @@
-/* i386 SDL 1.2 mouse classifier: passive, absolute, or relative A/B. */
+/* i386 SDL 1.2 classifier with a passive shared-frame cursor marker. */
 /* No 32-bit development headers are required to cross-build this probe. */
+#include "postal2_frame.h"
 typedef unsigned int uint32_t;
 typedef short int16_t;
 typedef unsigned short uint16_t;
@@ -7,24 +8,41 @@ typedef struct _IO_FILE FILE;
 extern FILE *stderr;
 extern int fprintf(FILE *, const char *, ...);
 extern void *dlsym(void *, const char *);
-extern void *dlopen(const char *, int);
 extern char *getenv(const char *);
+extern int open(const char *, int, ...);
+extern void *mmap(void *, unsigned long, int, int, int, long);
+extern int close(int);
+extern int munmap(void *, unsigned long);
 #define RTLD_NEXT ((void *)-1)
-#define RTLD_DEFAULT ((void *)0)
-#define RTLD_LAZY 1
-#define RTLD_NOLOAD 4
+#ifndef O_RDWR
+#define O_RDWR 2
+#endif
+#ifndef PROT_READ
+#define PROT_READ 1
+#endif
+#ifndef PROT_WRITE
+#define PROT_WRITE 2
+#endif
+#ifndef MAP_SHARED
+#define MAP_SHARED 1
+#endif
+#ifndef MAP_FAILED
+#define MAP_FAILED ((void *)-1)
+#endif
+#ifndef NULL
+#define NULL ((void *)0)
+#endif
 
 typedef unsigned char SDL_Event[24];
 static unsigned records;
 static uint16_t last_x, last_y;
 static int have_position;
 static unsigned peep_gets;
-static unsigned mouse_state_records;
 static unsigned cursor_records;
+static unsigned mouse_state_records;
 static unsigned diag_cursor_records;
-static int diag_cursor_lookup_done;
-static void *diag_egl_handle;
-static void (*diag_cursor_set)(int, int, int);
+static unsigned diag_cursor_map_attempts;
+static volatile uint32_t *diag_cursor_header;
 static int mode_is(const char *wanted) {
     const char *mode = getenv("POSTAL2_MOUSE_COORD_MODE");
     if (!mode) return 0;
@@ -44,33 +62,65 @@ static int cursor_event_position(const SDL_Event *event, int *x, int *y) {
     *y = (int)xy[1];
     return 1;
 }
-static void resolve_cursor_api(void) {
-    if (diag_cursor_lookup_done) return;
-    diag_cursor_lookup_done = 1;
-    diag_cursor_set = dlsym(RTLD_DEFAULT, "postal2_fb_set_cursor");
-    if (diag_cursor_set) {
-        fprintf(stderr, "P2-MAP cursor_api=resolved via=RTLD_DEFAULT\n");
-        return;
+static volatile uint32_t *map_cursor_frame(const char *path) {
+    int fd;
+    void *map;
+    volatile uint32_t *hdr;
+
+    if (!path || !*path) return NULL;
+    fd = open(path, O_RDWR);
+    if (fd < 0) return NULL;
+    map = mmap(NULL, POSTAL2_FRAME_HDR, PROT_READ | PROT_WRITE,
+               MAP_SHARED, fd, 0);
+    close(fd);
+    if (map == MAP_FAILED) return NULL;
+    hdr = (volatile uint32_t *)map;
+    if (hdr[POSTAL2_HDR_MAGIC] != POSTAL2_FRAME_MAGIC) {
+        munmap(map, POSTAL2_FRAME_HDR);
+        return NULL;
     }
-    diag_egl_handle = dlopen("libEGL.so.1", RTLD_LAZY | RTLD_NOLOAD);
-    if (diag_egl_handle)
-        diag_cursor_set = dlsym(diag_egl_handle, "postal2_fb_set_cursor");
-    if (diag_cursor_set) {
-        fprintf(stderr, "P2-MAP cursor_api=resolved via=libEGL-handle\n");
-    } else {
-        fprintf(stderr, "P2-MAP cursor_api=unavailable default=miss egl_handle=%s\n",
-                diag_egl_handle ? "opened" : "not-found");
-    }
+    return hdr;
 }
-static void publish_cursor(SDL_Event *event) {
-    if (!event || !env_is_one("POSTAL2_DIAG_UWINDOW_CURSOR")) return;
+
+static int store_cursor_frame_header(volatile uint32_t *hdr, int x, int y, int on) {
+    if (!hdr || hdr[POSTAL2_HDR_MAGIC] != POSTAL2_FRAME_MAGIC ||
+        x < 0 || y < 0 || x >= POSTAL2_FRAME_MAX_W || y >= POSTAL2_FRAME_MAX_H)
+        return 0;
+    hdr[POSTAL2_HDR_CURSOR_X] = (uint32_t)x;
+    hdr[POSTAL2_HDR_CURSOR_Y] = (uint32_t)y;
+    hdr[POSTAL2_HDR_CURSOR_ON] = on != 0 ? 1u : 0u;
+    return 1;
+}
+
+static int publish_cursor_event(volatile uint32_t *hdr, SDL_Event *event,
+                                int *x_out, int *y_out) {
     int x, y;
-    if (!cursor_event_position(event, &x, &y)) return;
-    resolve_cursor_api();
-    if (!diag_cursor_set) return;
-    diag_cursor_set(x, y, 1);
+    if (!cursor_event_position((const SDL_Event *)event, &x, &y)) return 0;
+    if (!store_cursor_frame_header(hdr, x, y, 1)) return 0;
+    if (x_out) *x_out = x;
+    if (y_out) *y_out = y;
+    return 1;
+}
+
+static void publish_cursor(SDL_Event *event) {
+    int x, y;
+    unsigned type;
+    if (!event || !env_is_one("POSTAL2_DIAG_UWINDOW_CURSOR")) return;
+    type = (*event)[0];
+    if (type != 4 && type != 5 && type != 6) return;
+    if (!diag_cursor_header) {
+        if (diag_cursor_map_attempts >= 3) return;
+        ++diag_cursor_map_attempts;
+        diag_cursor_header = map_cursor_frame(POSTAL2_FRAME_PATH);
+        if (!diag_cursor_header) {
+            fprintf(stderr, "P2-MAP frame_header=unavailable attempt=%u\n",
+                    diag_cursor_map_attempts);
+            return;
+        }
+        fprintf(stderr, "P2-MAP frame_header=ready path=%s\n", POSTAL2_FRAME_PATH);
+    }
+    if (!publish_cursor_event(diag_cursor_header, event, &x, &y)) return;
     if (diag_cursor_records < 120) {
-        unsigned type = (*event)[0];
         if (type == 4) {
             const int16_t *rel = (const int16_t *)(const void *)(*event + 8);
             fprintf(stderr, "P2-MAP source=raw-sdl-xy event=%u guest=%d,%d rel=%d,%d\n",

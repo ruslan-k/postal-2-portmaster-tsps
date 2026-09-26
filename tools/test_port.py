@@ -56,8 +56,14 @@ def main():
     assert "ELF 32-bit" in run("file", str(trace))
     assert "Intel 80386" in run("readelf", "-h", str(trace))
     trace_source = (ROOT / "src" / "postal2_sdl_input_trace.c").read_text()
-    assert 'dlsym(RTLD_DEFAULT, "postal2_fb_set_cursor")' in trace_source
-    assert 'dlopen("libEGL.so.1", RTLD_LAZY | RTLD_NOLOAD)' in trace_source
+    assert '#include "postal2_frame.h"' in trace_source
+    assert 'open(path, O_RDWR)' in trace_source
+    assert 'MAP_SHARED' in trace_source
+    assert 'hdr[POSTAL2_HDR_CURSOR_X]' in trace_source
+    assert 'hdr[POSTAL2_HDR_CURSOR_Y]' in trace_source
+    assert 'hdr[POSTAL2_HDR_CURSOR_ON]' in trace_source
+    assert 'dlsym(RTLD_DEFAULT, "postal2_fb_set_cursor")' not in trace_source
+    assert 'dlopen("libEGL.so.1", RTLD_LAZY | RTLD_NOLOAD)' not in trace_source
     assert "P2-MAP source=raw-sdl-xy" in trace_source
     assert "cursor_event_position" in trace_source
     presenter_source = (ROOT / "src" / "glbridge" / "server.c").read_text()
