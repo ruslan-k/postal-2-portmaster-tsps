@@ -42,6 +42,7 @@ static unsigned cursor_records;
 static unsigned mouse_state_records;
 static unsigned diag_cursor_records;
 static unsigned diag_cursor_map_attempts;
+static int diag_cursor_x, diag_cursor_y, diag_cursor_have_position;
 static volatile uint32_t *diag_cursor_header;
 static int mode_is(const char *wanted) {
     const char *mode = getenv("POSTAL2_MOUSE_COORD_MODE");
@@ -92,13 +93,42 @@ static int store_cursor_frame_header(volatile uint32_t *hdr, int x, int y, int o
     return 1;
 }
 
+static int clamp_cursor_coordinate(int value, int maximum) {
+    if (value < 0) return 0;
+    return value > maximum ? maximum : value;
+}
+
+static int update_cursor_marker(const SDL_Event *event, int *x, int *y,
+                                int *have_position) {
+    int raw_x, raw_y;
+    unsigned type;
+    if (!event || !x || !y || !have_position ||
+        !cursor_event_position(event, &raw_x, &raw_y))
+        return 0;
+    type = (*event)[0];
+    if (!*have_position) {
+        *x = raw_x;
+        *y = raw_y;
+        *have_position = 1;
+    } else if (type == 4) {
+        const int16_t *rel = (const int16_t *)(const void *)(*event + 8);
+        *x += rel[0];
+        *y += rel[1];
+    }
+    *x = clamp_cursor_coordinate(*x, 639);
+    *y = clamp_cursor_coordinate(*y, 479);
+    return 1;
+}
+
 static int publish_cursor_event(volatile uint32_t *hdr, SDL_Event *event,
                                 int *x_out, int *y_out) {
-    int x, y;
-    if (!cursor_event_position((const SDL_Event *)event, &x, &y)) return 0;
-    if (!store_cursor_frame_header(hdr, x, y, 1)) return 0;
-    if (x_out) *x_out = x;
-    if (y_out) *y_out = y;
+    if (!update_cursor_marker((const SDL_Event *)event, &diag_cursor_x,
+                              &diag_cursor_y, &diag_cursor_have_position))
+        return 0;
+    if (!store_cursor_frame_header(hdr, diag_cursor_x, diag_cursor_y, 1))
+        return 0;
+    if (x_out) *x_out = diag_cursor_x;
+    if (y_out) *y_out = diag_cursor_y;
     return 1;
 }
 
@@ -120,14 +150,16 @@ static void publish_cursor(SDL_Event *event) {
         fprintf(stderr, "P2-MAP frame_header=ready path=%s\n", POSTAL2_FRAME_PATH);
     }
     if (!publish_cursor_event(diag_cursor_header, event, &x, &y)) return;
-    if (diag_cursor_records < 120) {
+    if (diag_cursor_records < 512) {
         if (type == 4) {
+            const uint16_t *raw = (const uint16_t *)(const void *)(*event + 4);
             const int16_t *rel = (const int16_t *)(const void *)(*event + 8);
-            fprintf(stderr, "P2-MAP source=raw-sdl-xy event=%u guest=%d,%d rel=%d,%d\n",
-                    type, x, y, rel[0], rel[1]);
+            fprintf(stderr, "P2-MAP source=relative-accum event=%u raw=%u,%u rel=%d,%d marker=%d,%d\n",
+                    type, raw[0], raw[1], rel[0], rel[1], x, y);
         } else {
-            fprintf(stderr, "P2-MAP source=raw-sdl-xy event=%u guest=%d,%d\n",
-                    type, x, y);
+            const uint16_t *raw = (const uint16_t *)(const void *)(*event + 4);
+            fprintf(stderr, "P2-MAP source=relative-accum event=%u raw=%u,%u marker=%d,%d\n",
+                    type, raw[0], raw[1], x, y);
         }
     }
     ++diag_cursor_records;
@@ -254,8 +286,8 @@ int SDL_PollEvent(SDL_Event *event) {
         /* SDL_PollEvent usually calls SDL_PeepEvents internally; applying
          * relative deltas twice would erase the movement. */
         if (peep_gets == before) {
-            normalize(event);
             publish_cursor(event);
+            normalize(event);
         }
     }
     return result;
@@ -270,8 +302,8 @@ int SDL_PeepEvents(SDL_Event *events, int count, int action, uint32_t mask) {
         ++peep_gets;
         for (int i = 0; i < result && i < 8; ++i) {
             record("Peep", events + i);
-            normalize(events + i);
             publish_cursor(events + i);
+            normalize(events + i);
         }
     }
     return result;

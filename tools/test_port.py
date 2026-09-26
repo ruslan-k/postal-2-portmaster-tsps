@@ -64,7 +64,10 @@ def main():
     assert 'hdr[POSTAL2_HDR_CURSOR_ON]' in trace_source
     assert 'dlsym(RTLD_DEFAULT, "postal2_fb_set_cursor")' not in trace_source
     assert 'dlopen("libEGL.so.1", RTLD_LAZY | RTLD_NOLOAD)' not in trace_source
-    assert "P2-MAP source=raw-sdl-xy" in trace_source
+    assert "P2-MAP source=relative-accum" in trace_source
+    assert "raw=%u,%u rel=%d,%d marker=%d,%d" in trace_source
+    assert "diag_cursor_records < 512" in trace_source
+    assert "update_cursor_marker" in trace_source
     assert "cursor_event_position" in trace_source
     presenter_source = (ROOT / "src" / "glbridge" / "server.c").read_text()
     assert "P2-CURSOR guest=" in presenter_source

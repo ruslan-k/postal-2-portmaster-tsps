@@ -42,30 +42,53 @@ static void test_cursor_frame_header_mapping(void) {
     assert(hdr[POSTAL2_HDR_CURSOR_ON] == 1);
     assert(motion_xy[0] == 320 && motion_xy[1] == 240);
     assert(motion_rel[0] == 3 && motion_rel[1] == -2);
+
+    SDL_Event edge_motion = {0};
+    uint16_t *edge_xy = (uint16_t *)(void *)(edge_motion + 4);
+    int16_t *edge_rel = (int16_t *)(void *)(edge_motion + 8);
+    edge_motion[0] = 4;
+    edge_xy[0] = 639; edge_xy[1] = 479;
+    edge_rel[0] = 15; edge_rel[1] = 20;
+    assert(publish_cursor_event(hdr, &edge_motion, &marker_x, &marker_y) == 1);
+    assert(marker_x == 335 && marker_y == 260);
+    assert(hdr[POSTAL2_HDR_CURSOR_X] == 335);
+    assert(hdr[POSTAL2_HDR_CURSOR_Y] == 260);
+    assert(edge_xy[0] == 639 && edge_xy[1] == 479);
+    assert(edge_rel[0] == 15 && edge_rel[1] == 20);
+
     SDL_Event down = {0};
     uint16_t *down_xy = (uint16_t *)(void *)(down + 4);
     down[0] = 5;
     down[8] = 0x7f; down[10] = 0x6f;
     down_xy[0] = 639; down_xy[1] = 479;
     assert(publish_cursor_event(hdr, &down, &marker_x, &marker_y) == 1);
-    assert(marker_x == 639 && marker_y == 479);
-    assert(hdr[POSTAL2_HDR_CURSOR_X] == 639);
-    assert(hdr[POSTAL2_HDR_CURSOR_Y] == 479);
+    assert(marker_x == 335 && marker_y == 260);
+    assert(hdr[POSTAL2_HDR_CURSOR_X] == 335);
+    assert(hdr[POSTAL2_HDR_CURSOR_Y] == 260);
     SDL_Event up = {0};
     uint16_t *up_xy = (uint16_t *)(void *)(up + 4);
     up[0] = 6;
     up_xy[0] = 639; up_xy[1] = 479;
     assert(publish_cursor_event(hdr, &up, &marker_x, &marker_y) == 1);
-    assert(marker_x == 639 && marker_y == 479);
+    assert(marker_x == 335 && marker_y == 260);
+
+    edge_rel[0] = 1000; edge_rel[1] = -1000;
+    assert(publish_cursor_event(hdr, &edge_motion, &marker_x, &marker_y) == 1);
+    assert(marker_x == 639 && marker_y == 0);
+    edge_rel[0] = -1000; edge_rel[1] = 1000;
+    assert(publish_cursor_event(hdr, &edge_motion, &marker_x, &marker_y) == 1);
+    assert(marker_x == 0 && marker_y == 479);
+
     SDL_Event key = {0};
     key[0] = 2;
     assert(publish_cursor_event(hdr, &key, &marker_x, &marker_y) == 0);
-    assert(hdr[POSTAL2_HDR_CURSOR_X] == 639);
+    assert(hdr[POSTAL2_HDR_CURSOR_X] == 0);
     assert(hdr[POSTAL2_HDR_CURSOR_Y] == 479);
+
     assert(store_cursor_frame_header(hdr, POSTAL2_FRAME_MAX_W, 0, 1) == 0);
     assert(store_cursor_frame_header(hdr, 0, POSTAL2_FRAME_MAX_H, 1) == 0);
     assert(store_cursor_frame_header(hdr, -1, 0, 1) == 0);
-    assert(hdr[POSTAL2_HDR_CURSOR_X] == 639);
+    assert(hdr[POSTAL2_HDR_CURSOR_X] == 0);
     assert(hdr[POSTAL2_HDR_CURSOR_Y] == 479);
     assert(munmap((void *)hdr, POSTAL2_FRAME_HDR) == 0);
 
@@ -73,7 +96,7 @@ static void test_cursor_frame_header_mapping(void) {
     assert(fd >= 0);
     uint32_t readback[POSTAL2_FRAME_HDR / 4] = {0};
     assert(pread(fd, readback, sizeof(readback), 0) == (ssize_t)sizeof(readback));
-    assert(readback[POSTAL2_HDR_CURSOR_X] == 639);
+    assert(readback[POSTAL2_HDR_CURSOR_X] == 0);
     assert(readback[POSTAL2_HDR_CURSOR_Y] == 479);
     assert(readback[POSTAL2_HDR_CURSOR_ON] == 1);
     assert(close(fd) == 0);
@@ -155,6 +178,6 @@ int main(void) {
     assert(force_grab_mode(1) == 0);
     assert(setenv("POSTAL2_DIAG_UWINDOW_CURSOR", "0", 1) == 0);
     publish_cursor(&event);
-    puts("PASS: raw SDL x/y are written to the shared presenter frame without mutating the event");
+    puts("PASS: presenter marker accumulates SDL relative motion without mutating the game event");
     return 0;
 }
