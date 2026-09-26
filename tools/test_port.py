@@ -4,6 +4,7 @@ import os
 import pathlib
 import subprocess
 import sys
+import tempfile
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -32,6 +33,14 @@ def main():
     subprocess.run(["bash", "-n", str(GAME / "setup.sh")], check=True)
     subprocess.run(["bash", "-n", str(ROOT / "tools" / "build_tsps_bridge.sh")], check=True)
     subprocess.run(["bash", "-n", str(ROOT / "tools" / "build_port.sh")], check=True)
+    with tempfile.TemporaryDirectory(prefix="postal2-trace-test-") as tmp:
+        test_binary = pathlib.Path(tmp) / "test_input_trace"
+        subprocess.run(
+            ["gcc", "-rdynamic", "-O2", "-Wall", "-Wextra", "-Werror",
+             str(ROOT / "tools" / "test_input_trace.c"), "-ldl", "-o", str(test_binary)],
+            check=True,
+        )
+        subprocess.run([str(test_binary)], check=True)
 
     presenter = GAME / "postal2_present"
     egl = GAME / "glbridge" / "libEGL.so.1"
@@ -46,8 +55,14 @@ def main():
     trace = GAME / "postal2_sdl_input_trace.so"
     assert "ELF 32-bit" in run("file", str(trace))
     assert "Intel 80386" in run("readelf", "-h", str(trace))
+    trace_source = (ROOT / "src" / "postal2_sdl_input_trace.c").read_text()
+    assert 'dlsym(RTLD_DEFAULT, "postal2_fb_set_cursor")' in trace_source
+    assert "P2-MAP axis_projection=" in trace_source
+    assert "static void accumulate_mouse_delta" in trace_source
     launcher = (PORT / "Postal 2.sh").read_text()
     assert "BOX86_LD_PRELOAD" in launcher
+    assert 'POSTAL2_DIAG_UWINDOW_CURSOR="${POSTAL2_DIAG_UWINDOW_CURSOR:-1}"' in launcher
+    assert "uwindow_cursor_diag=$POSTAL2_DIAG_UWINDOW_CURSOR" in launcher
     assert 'POSTAL2_FORCE_UNGRAB="${POSTAL2_FORCE_UNGRAB:-0}"' in launcher
     assert "force_ungrab=$POSTAL2_FORCE_UNGRAB" in launcher
     for path in (presenter, egl, box86, gl4es, xorg, xorg_conf):

@@ -435,16 +435,17 @@ run_xvfb_backend() {
     start_input_helper || return 6
   fi
   pm_platform_helper "$GAMEDIR/box86/box86" >/dev/null &
-  # Guest i386 SDL classifier: isolate whether SDL's pointer grab confines the menu cursor.
-  # POSTAL2_FORCE_UNGRAB=0 is the unchanged SDL_GRAB_ON comparator.
+  # Diagnostic overlay projects accumulated SDL relative deltas into the guest framebuffer.
+  # POSTAL2_DIAG_UWINDOW_CURSOR=0 disables the yellow reference crosshair.
   if [ "${POSTAL2_INPUT_TRACE:-1}" = 1 ] && [ -f "$GAMEDIR/postal2_sdl_input_trace.so" ]; then
     export BOX86_LD_PRELOAD="$GAMEDIR/postal2_sdl_input_trace.so"
     export POSTAL2_MOUSE_COORD_MODE="${POSTAL2_MOUSE_COORD_MODE:-relative}"
     export POSTAL2_FORCE_CURSOR="${POSTAL2_FORCE_CURSOR:-1}"
     export POSTAL2_FORCE_UNGRAB="${POSTAL2_FORCE_UNGRAB:-0}"
-    echo "input_trace=$BOX86_LD_PRELOAD coord_mode=$POSTAL2_MOUSE_COORD_MODE force_cursor=$POSTAL2_FORCE_CURSOR force_ungrab=$POSTAL2_FORCE_UNGRAB"
+    export POSTAL2_DIAG_UWINDOW_CURSOR="${POSTAL2_DIAG_UWINDOW_CURSOR:-1}"
+    echo "input_trace=$BOX86_LD_PRELOAD coord_mode=$POSTAL2_MOUSE_COORD_MODE force_cursor=$POSTAL2_FORCE_CURSOR force_ungrab=$POSTAL2_FORCE_UNGRAB uwindow_cursor_diag=$POSTAL2_DIAG_UWINDOW_CURSOR"
   else
-    unset BOX86_LD_PRELOAD
+    unset BOX86_LD_PRELOAD POSTAL2_DIAG_UWINDOW_CURSOR
     echo "input_trace=off"
   fi
   env -u LD_PRELOAD -u EGL_PLATFORM "$LD" --library-path "$GAME_LD" "$GAMEDIR/box86/box86" ./postal2-bin -windowed

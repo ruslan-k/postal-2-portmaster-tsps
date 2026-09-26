@@ -9,6 +9,7 @@ extern int fprintf(FILE *, const char *, ...);
 extern void *dlsym(void *, const char *);
 extern char *getenv(const char *);
 #define RTLD_NEXT ((void *)-1)
+#define RTLD_DEFAULT ((void *)0)
 
 typedef unsigned char SDL_Event[24];
 static unsigned records;
@@ -17,11 +18,52 @@ static int have_position;
 static unsigned peep_gets;
 static unsigned mouse_state_records;
 static unsigned cursor_records;
+static int diag_mouse_x, diag_mouse_y;
+static unsigned diag_mouse_records;
+static unsigned diag_overlay_lookups;
+static int diag_overlay_missing_reported;
+static void (*diag_cursor_overlay)(int, int, int);
 static int mode_is(const char *wanted) {
     const char *mode = getenv("POSTAL2_MOUSE_COORD_MODE");
     if (!mode) return 0;
     while (*wanted && *mode && *wanted == *mode) { ++wanted; ++mode; }
     return !*wanted && !*mode;
+}
+static int env_is_one(const char *name) {
+    const char *value = getenv(name);
+    return value && value[0] == '1' && value[1] == '\0';
+}
+static void accumulate_mouse_delta(int *x, int *y, int dx, int dy) {
+    if (!x || !y) return;
+    *x += dx;
+    *y += dy;
+    if (*x < 0) *x = 0;
+    else if (*x > 639) *x = 639;
+    if (*y < 0) *y = 0;
+    else if (*y > 479) *y = 479;
+}
+static void trace_relative_projection(SDL_Event *event) {
+    if (!event || (*event)[0] != 4 || !env_is_one("POSTAL2_DIAG_UWINDOW_CURSOR"))
+        return;
+    const uint16_t *xy = (const uint16_t *)(const void *)(*event + 4);
+    const int16_t *rel = (const int16_t *)(const void *)(*event + 8);
+    accumulate_mouse_delta(&diag_mouse_x, &diag_mouse_y, rel[0], rel[1]);
+    if (!diag_cursor_overlay && diag_overlay_lookups < 8) {
+        ++diag_overlay_lookups;
+        diag_cursor_overlay = dlsym(RTLD_DEFAULT, "postal2_fb_set_cursor");
+        if (diag_cursor_overlay)
+            fprintf(stderr, "P2-MAP overlay=available mode=relative scale=1\n");
+    }
+    if (diag_cursor_overlay) {
+        diag_cursor_overlay(diag_mouse_x, diag_mouse_y, 1);
+        if (diag_mouse_records < 120)
+            fprintf(stderr, "P2-MAP axis_projection=%d,%d raw=%u,%u rel=%d,%d\n",
+                    diag_mouse_x, diag_mouse_y, xy[0], xy[1], rel[0], rel[1]);
+    } else if (!diag_overlay_missing_reported) {
+        fprintf(stderr, "P2-MAP overlay=unavailable api=postal2_fb_set_cursor\n");
+        diag_overlay_missing_reported = 1;
+    }
+    ++diag_mouse_records;
 }
 static int force_cursor_toggle(int requested) {
     const char *force = getenv("POSTAL2_FORCE_CURSOR");
@@ -143,7 +185,10 @@ int SDL_PollEvent(SDL_Event *event) {
         record("Poll", event);
         /* SDL_PollEvent usually calls SDL_PeepEvents internally; applying
          * relative deltas twice would erase the movement. */
-        if (peep_gets == before) normalize(event);
+        if (peep_gets == before) {
+            normalize(event);
+            trace_relative_projection(event);
+        }
     }
     return result;
 }
@@ -158,6 +203,7 @@ int SDL_PeepEvents(SDL_Event *events, int count, int action, uint32_t mask) {
         for (int i = 0; i < result && i < 8; ++i) {
             record("Peep", events + i);
             normalize(events + i);
+            trace_relative_projection(events + i);
         }
     }
     return result;
