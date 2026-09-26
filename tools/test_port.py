@@ -71,6 +71,7 @@ def main():
     launcher = (PORT / "Postal 2.sh").read_text()
     assert "BOX86_LD_PRELOAD" in launcher
     assert 'POSTAL2_DIAG_UWINDOW_CURSOR="${POSTAL2_DIAG_UWINDOW_CURSOR:-1}"' in launcher
+    assert 'POSTAL2_FORCE_CURSOR="${POSTAL2_FORCE_CURSOR:-0}"' in launcher
     assert "uwindow_cursor_diag=$POSTAL2_DIAG_UWINDOW_CURSOR" in launcher
     assert 'POSTAL2_FORCE_UNGRAB="${POSTAL2_FORCE_UNGRAB:-0}"' in launcher
     assert "force_ungrab=$POSTAL2_FORCE_UNGRAB" in launcher

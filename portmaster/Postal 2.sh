@@ -440,7 +440,7 @@ run_xvfb_backend() {
   if [ "${POSTAL2_INPUT_TRACE:-1}" = 1 ] && [ -f "$GAMEDIR/postal2_sdl_input_trace.so" ]; then
     export BOX86_LD_PRELOAD="$GAMEDIR/postal2_sdl_input_trace.so"
     export POSTAL2_MOUSE_COORD_MODE="${POSTAL2_MOUSE_COORD_MODE:-relative}"
-    export POSTAL2_FORCE_CURSOR="${POSTAL2_FORCE_CURSOR:-1}"
+    export POSTAL2_FORCE_CURSOR="${POSTAL2_FORCE_CURSOR:-0}"
     export POSTAL2_FORCE_UNGRAB="${POSTAL2_FORCE_UNGRAB:-0}"
     export POSTAL2_DIAG_UWINDOW_CURSOR="${POSTAL2_DIAG_UWINDOW_CURSOR:-1}"
     echo "input_trace=$BOX86_LD_PRELOAD coord_mode=$POSTAL2_MOUSE_COORD_MODE force_cursor=$POSTAL2_FORCE_CURSOR force_ungrab=$POSTAL2_FORCE_UNGRAB uwindow_cursor_diag=$POSTAL2_DIAG_UWINDOW_CURSOR"
