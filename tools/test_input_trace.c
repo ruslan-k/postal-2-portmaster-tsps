@@ -38,7 +38,7 @@ int main(void) {
     rel[0] = 320; rel[1] = 245;
     normalize(&event);
     assert(xy[0] == 639 && xy[1] == 479);
-    assert(rel[0] == 0 && rel[1] == 0);
+    assert(rel[0] == 320 && rel[1] == 245);
     rel[0] = 327; rel[1] = 241;
     normalize(&event);
     assert(xy[0] == 639 && xy[1] == 479);
@@ -47,6 +47,15 @@ int main(void) {
     xy[0] = 639; xy[1] = 479;
     normalize(&event);
     assert(xy[0] == 639 && xy[1] == 479);
-    puts("PASS: passive, absolute, relative, click/release and key preservation");
+    have_position = 0;
+    event[0] = 4;
+    rel[0] = 256; rel[1] = 192;
+    normalize(&event);
+    int sum_x = rel[0], sum_y = rel[1];
+    rel[0] = 639; rel[1] = 479;
+    normalize(&event);
+    sum_x += rel[0]; sum_y += rel[1];
+    assert(sum_x == 639 && sum_y == 479);
+    puts("PASS: passive, absolute, full relative range, click/release and key preservation");
     return 0;
 }

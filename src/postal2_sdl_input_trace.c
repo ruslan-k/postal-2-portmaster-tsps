@@ -36,8 +36,11 @@ static void normalize(SDL_Event *event) {
         uint16_t x = rel[0] < 0 ? 0 : rel[0] > 639 ? 639 : (uint16_t)rel[0];
         uint16_t y = rel[1] < 0 ? 0 : rel[1] > 479 ? 479 : (uint16_t)rel[1];
         if (relative_mode) {
-            rel[0] = have_position ? (int16_t)(x - last_x) : 0;
-            rel[1] = have_position ? (int16_t)(y - last_y) : 0;
+            /* Seed the menu's logical cursor from the first real pointer
+             * position. Starting at zero loses the initial 256x192 offset,
+             * so the cursor can traverse only the upper-left subset. */
+            rel[0] = have_position ? (int16_t)(x - last_x) : (int16_t)x;
+            rel[1] = have_position ? (int16_t)(y - last_y) : (int16_t)y;
         } else {
             xy[0] = x;
             xy[1] = y;
