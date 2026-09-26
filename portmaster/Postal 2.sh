@@ -435,11 +435,11 @@ run_xvfb_backend() {
     start_input_helper || return 6
   fi
   pm_platform_helper "$GAMEDIR/box86/box86" >/dev/null &
-  # Guest i386 SDL classifier: default absolute-coordinate A/B for the next
-  # physical launch. Set POSTAL2_MOUSE_COORD_MODE=passive for raw-only logging.
+  # Guest i386 SDL classifier: next physical A/B changes only relative deltas.
+  # POSTAL2_MOUSE_COORD_MODE=passive is the no-op comparator.
   if [ "${POSTAL2_INPUT_TRACE:-1}" = 1 ] && [ -f "$GAMEDIR/postal2_sdl_input_trace.so" ]; then
     export BOX86_LD_PRELOAD="$GAMEDIR/postal2_sdl_input_trace.so"
-    export POSTAL2_MOUSE_COORD_MODE="${POSTAL2_MOUSE_COORD_MODE:-absolute}"
+    export POSTAL2_MOUSE_COORD_MODE="${POSTAL2_MOUSE_COORD_MODE:-relative}"
     echo "input_trace=$BOX86_LD_PRELOAD coord_mode=$POSTAL2_MOUSE_COORD_MODE"
   else
     unset BOX86_LD_PRELOAD

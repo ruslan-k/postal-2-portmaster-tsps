@@ -31,6 +31,22 @@ int main(void) {
     event[4] = 39;
     normalize(&event);
     assert(event[4] == 39);
-    puts("PASS: passive path, motion, click/release and key preservation");
+    assert(setenv("POSTAL2_MOUSE_COORD_MODE", "relative", 1) == 0);
+    have_position = 0;
+    event[0] = 4;
+    xy[0] = 639; xy[1] = 479;
+    rel[0] = 320; rel[1] = 245;
+    normalize(&event);
+    assert(xy[0] == 639 && xy[1] == 479);
+    assert(rel[0] == 0 && rel[1] == 0);
+    rel[0] = 327; rel[1] = 241;
+    normalize(&event);
+    assert(xy[0] == 639 && xy[1] == 479);
+    assert(rel[0] == 7 && rel[1] == -4);
+    event[0] = 5;
+    xy[0] = 639; xy[1] = 479;
+    normalize(&event);
+    assert(xy[0] == 639 && xy[1] == 479);
+    puts("PASS: passive, absolute, relative, click/release and key preservation");
     return 0;
 }
