@@ -167,7 +167,7 @@ run_hybrid_backend() {
   export POSTAL2_HEIGHT=480
   export TSPGL_WIDTH="$POSTAL2_WIDTH"
   export TSPGL_HEIGHT="$POSTAL2_HEIGHT"
-  export TSPGL_PRESENT="${POSTAL2_PRESENT:-letterbox}"
+  export TSPGL_PRESENT="${POSTAL2_PRESENT:-stretch}"
   rm -f /tmp/postal2.present.ready /tmp/tsp-glbridge.sock /tmp/tspgl-xport /tmp/postal2.frame
 
   (
@@ -318,7 +318,7 @@ run_xvfb_backend() {
   export POSTAL2_HEIGHT=480
   export TSPGL_WIDTH="$POSTAL2_WIDTH"
   export TSPGL_HEIGHT="$POSTAL2_HEIGHT"
-  export TSPGL_PRESENT="${POSTAL2_PRESENT:-letterbox}"
+  export TSPGL_PRESENT="${POSTAL2_PRESENT:-stretch}"
   rm -f /tmp/postal2.present.ready /tmp/tsp-glbridge.sock /tmp/tspgl-xport /tmp/postal2.frame
 
   (
@@ -541,7 +541,7 @@ else
     export SDL_OFFSCREEN_HEIGHT="$POSTAL2_HEIGHT"
     export TSPGL_WIDTH="$POSTAL2_WIDTH"
     export TSPGL_HEIGHT="$POSTAL2_HEIGHT"
-    export TSPGL_PRESENT="${POSTAL2_PRESENT:-letterbox}"
+    export TSPGL_PRESENT="${POSTAL2_PRESENT:-stretch}"
     export TSPGL_ASPECT_VIEWPORT_720="${POSTAL2_ASPECT_VIEWPORT_720:-0}"
     rm -f /tmp/postal2.present.ready /tmp/tsp-glbridge.sock /tmp/tspgl-xport /tmp/postal2.frame
 

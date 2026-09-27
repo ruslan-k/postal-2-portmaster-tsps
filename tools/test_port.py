@@ -72,9 +72,10 @@ def main():
     assert "cursor_event_position" in trace_source
     presenter_source = (ROOT / "src" / "glbridge" / "server.c").read_text()
     assert "P2-CURSOR guest=" in presenter_source
-    assert "int win_w = 640;" in presenter_source
-    assert "int win_h = 480;" in presenter_source
+    assert "int win_w = 1280;" in presenter_source
+    assert "int win_h = 720;" in presenter_source
     launcher = (PORT / "Postal 2.sh").read_text()
+    assert launcher.count('export TSPGL_PRESENT="${POSTAL2_PRESENT:-stretch}"') == 3
     assert "BOX86_LD_PRELOAD" in launcher
     viewport_rules = (
         r's/^([[:space:]]*[[:alnum:]_]*ViewportX[[:space:]]*=[[:space:]]*)[^[:space:]]*/\1640/',
